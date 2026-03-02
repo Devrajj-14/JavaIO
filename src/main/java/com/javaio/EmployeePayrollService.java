@@ -11,6 +11,7 @@ import java.util.Scanner;
  *
  * UC1: Reads employee payroll data from the console and writes it back to the console.
  * UC4: Stores employee payroll into a file using File IO and counts entries.
+ * UC5: Prints employee payroll lines from file and shows number of entries.
  */
 public class EmployeePayrollService {
 
@@ -77,7 +78,7 @@ public class EmployeePayrollService {
     }
 
     /**
-     * UC4: Count the number of entries (lines) in the payroll file.
+     * UC4 & UC5: Count the number of entries (lines) in the payroll file.
      *
      * @return number of lines in the payroll file
      * @throws IOException if file reading fails
@@ -94,19 +95,55 @@ public class EmployeePayrollService {
     }
 
     // =====================================================================
-    //  Main - UC4 Demo
+    //  UC5 - Print Employee Payrolls from File and Show Number of Entries
+    // =====================================================================
+
+    /**
+     * UC5: Reads the payroll file line by line and prints each employee payroll.
+     * Also shows the total number of entries to verify the operation worked.
+     *
+     * @throws IOException if file reading fails
+     */
+    public void printPayrollLinesFromFile() throws IOException {
+        System.out.println("\n=== UC5 - Printing Employee Payrolls from File ===");
+
+        Path filePath = Paths.get(PAYROLL_FILE);
+        if (!Files.exists(filePath)) {
+            System.out.println("Payroll file not found. Please run UC4 first to write payroll data.");
+            return;
+        }
+
+        System.out.println("--- Payroll Lines ---");
+        Files.lines(filePath).forEach(line -> {
+            String[] parts = line.split(",");
+            if (parts.length == 3) {
+                System.out.println("  ID: " + parts[0]
+                        + " | Name: " + parts[1]
+                        + " | Salary: " + parts[2]);
+            }
+        });
+        System.out.println("---------------------");
+
+        // Count entries to ensure the print operation worked
+        long count = countEntriesInFile();
+        System.out.println("UC5 - Total payroll entries displayed: " + count);
+    }
+
+    // =====================================================================
+    //  Main - UC5 Demo (runs UC4 first, then UC5)
     // =====================================================================
 
     public static void main(String[] args) throws IOException {
         EmployeePayrollService service = new EmployeePayrollService();
 
-        // Populate test employee payroll objects (UC4)
+        // UC4: Populate and write to file
         List<EmployeePayroll> employees = new ArrayList<>();
         employees.add(new EmployeePayroll(1, "Alice", 75000.00));
         employees.add(new EmployeePayroll(2, "Bob", 82000.00));
         employees.add(new EmployeePayroll(3, "Charlie", 68000.00));
-
-        // Write to file and count entries (UC4)
         service.writePayrollToFile(employees);
+
+        // UC5: Print payroll lines and show count
+        service.printPayrollLinesFromFile();
     }
 }
