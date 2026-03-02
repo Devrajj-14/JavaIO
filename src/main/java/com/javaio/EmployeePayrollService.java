@@ -3,8 +3,11 @@ package com.javaio;
 import java.io.*;
 import java.nio.file.*;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 /**
  * Employee Payroll Service
@@ -12,6 +15,7 @@ import java.util.Scanner;
  * UC1: Reads employee payroll data from the console and writes it back to the console.
  * UC4: Stores employee payroll into a file using File IO and counts entries.
  * UC5: Prints employee payroll lines from file and shows number of entries.
+ * UC6: Reads employee payroll file for analysis (max/min salary, average, search by name).
  */
 public class EmployeePayrollService {
 
@@ -52,7 +56,7 @@ public class EmployeePayrollService {
     //  UC4 - Store Employee Payroll into a File
     // =====================================================================
 
-    private static final String PAYROLL_FILE = "employee_payroll.txt";
+    static final String PAYROLL_FILE = "employee_payroll.txt";
 
     /**
      * UC4: Writes a list of EmployeePayroll objects to a file using File IO.
@@ -130,7 +134,79 @@ public class EmployeePayrollService {
     }
 
     // =====================================================================
-    //  Main - UC5 Demo (runs UC4 first, then UC5)
+    //  UC6 - Read Employee Payroll File for Analysis
+    // =====================================================================
+
+    /**
+     * UC6: Reads all employee records from the payroll file into a list.
+     *
+     * @return List of EmployeePayroll parsed from the file
+     * @throws IOException if file reading fails
+     */
+    public List<EmployeePayroll> readAllPayrollFromFile() throws IOException {
+        System.out.println("\n=== UC6 - Reading Employee Payroll File for Analysis ===");
+
+        Path filePath = Paths.get(PAYROLL_FILE);
+        if (!Files.exists(filePath)) {
+            System.out.println("Payroll file not found. Please run UC4 first.");
+            return new ArrayList<>();
+        }
+
+        List<EmployeePayroll> employees = Files.lines(filePath)
+                .filter(line -> !line.trim().isEmpty())
+                .map(line -> {
+                    String[] parts = line.split(",");
+                    int id = Integer.parseInt(parts[0].trim());
+                    String name = parts[1].trim();
+                    double salary = Double.parseDouble(parts[2].trim());
+                    return new EmployeePayroll(id, name, salary);
+                })
+                .collect(Collectors.toList());
+
+        System.out.println("Loaded " + employees.size() + " employee records from file.");
+        return employees;
+    }
+
+    /**
+     * UC6: Perform analysis on the payroll data:
+     *  - Highest salary employee
+     *  - Lowest salary employee
+     *  - Average salary
+     *
+     * @throws IOException if file reading fails
+     */
+    public void analysePayroll() throws IOException {
+        List<EmployeePayroll> employees = readAllPayrollFromFile();
+
+        if (employees.isEmpty()) {
+            System.out.println("No payroll data available for analysis.");
+            return;
+        }
+
+        System.out.println("\n--- Payroll Analysis ---");
+
+        Optional<EmployeePayroll> highest = employees.stream()
+                .max(Comparator.comparingDouble(EmployeePayroll::getSalary));
+        highest.ifPresent(emp ->
+                System.out.println("  Highest Salary -> " + emp.getName() + " : " + emp.getSalary()));
+
+        Optional<EmployeePayroll> lowest = employees.stream()
+                .min(Comparator.comparingDouble(EmployeePayroll::getSalary));
+        lowest.ifPresent(emp ->
+                System.out.println("  Lowest  Salary -> " + emp.getName() + " : " + emp.getSalary()));
+
+        double average = employees.stream()
+                .mapToDouble(EmployeePayroll::getSalary)
+                .average()
+                .orElse(0.0);
+        System.out.println("  Average Salary -> " + average);
+
+        System.out.println("  Total Records  -> " + countEntriesInFile());
+        System.out.println("------------------------");
+    }
+
+    // =====================================================================
+    //  Main - Full Demo (UC4 → UC5 → UC6)
     // =====================================================================
 
     public static void main(String[] args) throws IOException {
@@ -145,5 +221,8 @@ public class EmployeePayrollService {
 
         // UC5: Print payroll lines and show count
         service.printPayrollLinesFromFile();
+
+        // UC6: Analyse payroll data
+        service.analysePayroll();
     }
 }
